@@ -28,6 +28,14 @@ class Solver:
 
         self.counter = 0
         self.dirfigs = f"n_{self.n:.2f}_m_{self.m:.2f}"
+        os.makedirs(self.dirfigs, exist_ok=True)
+        
+
+    def calc_delta(self, Z0, delta_initial_guess=3./4.):
+        self.delta = root(self.f, x0=[delta_initial_guess], args=Z0, tol=1e-8).x[0]
+        return self
+
+
     def f(self, delta_arr, Z0):
         delta = delta_arr[0]
         if delta >= 1. or delta <= 0.5: return 1.
