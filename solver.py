@@ -28,6 +28,20 @@ class Solver:
 
         self.counter = 0
         self.dirfigs = f"n_{self.n:.2f}_m_{self.m:.2f}"
+    def integrate_from_A(self, delta, Z0, dense_output=False):
+        V0 = delta 
+        V0 += (self.beta*delta-1.) * Z0 / (self.m*(self.m+1.))
+
+        Zmax = -self.m*delta/2.
+
+        solution = solve_ivp(self.dVdZ, t_span=(Z0, Zmax), y0=[V0], args=[delta], events=self.event_lambda, rtol=1e-8, method='LSODA', dense_output=dense_output)
+        
+        return solution
+
+        solution = solve_ivp(self.dVdZ, t_span=(Z0, Zmax), y0=[V0], args=[delta], events=self.event_lambda, rtol=1e-8, method='LSODA', dense_output=dense_output)
+        
+        return solution
+
     def dVdZ(self, Z, V_arr, delta:float):
         V = V_arr[0]
 
@@ -37,4 +51,5 @@ class Solver:
 
         denom = self.m*Z*(2.*Z + self.m*V)
 
-        return [numer / denom]
+def zero_slope_event(Z, V_arr, m):
+    return (2.*Z + m*V_arr[0])
