@@ -28,4 +28,13 @@ class Solver:
 
         self.counter = 0
         self.dirfigs = f"n_{self.n:.2f}_m_{self.m:.2f}"
-        os.makedirs(self.dirfigs, exist_ok=True)
+    def dVdZ(self, Z, V_arr, delta:float):
+        V = V_arr[0]
+
+        numer = Z*(2.*delta-1.)
+        numer += self.m*(self.n+1.)*V*Z 
+        numer += self.m*(delta-V)*V
+
+        denom = self.m*Z*(2.*Z + self.m*V)
+
+        return [numer / denom]
