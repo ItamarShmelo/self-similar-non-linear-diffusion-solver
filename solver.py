@@ -117,5 +117,24 @@ class Solver:
                 return Z, V
             
             return (r**2/np.abs(t)*np.abs(Z))**(1./self.m), r/np.abs(t)*V
+        else:
+            eta = r / np.abs(t)**self.delta
+            Z = np.zeros_like(eta)
+            V = np.zeros_like(eta)
+            eta_initial = min(eta[0], 1e-8)
+            ln_eta = np.log(eta)
+            
+            Z0 = 1.0/eta_initial**2.0
+            V0 = -(2.*self.delta-1.)/(self.m*(self.n+1.))*(1. - (self.beta*self.delta-1.)/(self.m*(self.n+1.)*(self.n+3.)*Z0))
+
+            solution = solve_ivp(self.ode, t_span=(np.log(eta_initial), ln_eta[-1]), y0=(Z0, V0), t_eval=ln_eta, method='LSODA', rtol=1e-12, atol=1e-8)
+            
+            Z[:], V[:] = solution.y[0], solution.y[1]
+            
+            if solve_for_Z_V:
+                return Z, V
+
+            return (r**2/np.abs(t)*np.abs(Z))**(1./self.m), r/np.abs(t)*V
+    
 def zero_slope_event(Z, V_arr, m):
     return (2.*Z + m*V_arr[0])
