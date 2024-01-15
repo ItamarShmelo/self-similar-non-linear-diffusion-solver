@@ -38,10 +38,17 @@ class Solver:
         
         return solution
 
+    def integrate_from_O(self, delta:float, Z0:float, dense_output:bool=False):
+        V0 = 1. - ((2.*delta - 1.)*(3. + 2.*self.m)/(self.m*delta) - 3. + self.n)*Z0
+        V0 = 1.- V0*(self.beta*delta-1.)*(self.m+1)/(self.m*delta**2.)*Z0
+        V0 = - (2.*delta - 1.) * Z0 / self.m*V0
+        Zmax = -self.m*delta/2.
+
+
         solution = solve_ivp(self.dVdZ, t_span=(Z0, Zmax), y0=[V0], args=[delta], events=self.event_lambda, rtol=1e-8, method='LSODA', dense_output=dense_output)
         
         return solution
-
+    
     def dVdZ(self, Z, V_arr, delta:float):
         V = V_arr[0]
 
