@@ -85,5 +85,16 @@ class Solver:
 
         denom = self.m*Z*(2.*Z + self.m*V)
 
+        return [numer / denom]
+    
+    def ode(self, ln_eta, y):
+        Z, V = y
+        dZ_dln_eta = -(2.*Z+self.m*V)
+
+        dV_dln_eta = -(2.*self.delta-1.)
+        dV_dln_eta -= self.m*(self.n+1.)*V
+        dV_dln_eta -= 0. if np.abs(Z) < np.finfo(float).eps*1024. else self.m*(self.delta-V)*V/Z 
+        dV_dln_eta /= self.m
+        return [dZ_dln_eta, dV_dln_eta]
 def zero_slope_event(Z, V_arr, m):
     return (2.*Z + m*V_arr[0])
