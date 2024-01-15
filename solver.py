@@ -137,4 +137,52 @@ class Solver:
             return (r**2/np.abs(t)*np.abs(Z))**(1./self.m), r/np.abs(t)*V
     
 def zero_slope_event(Z, V_arr, m):
-    return (2.*Z + m*V_arr[0])
+    
+if __name__ == "__main__":
+    Z0=-1e-5
+
+    solver = Solver(n=2., m=7.0).calc_delta(Z0=Z0)
+
+    
+    t=1.
+    r=np.linspace(1e-10, 10.0, 100)
+    Z, V = solver.solve(r, t, solve_for_Z_V=True)
+
+    plt.plot(r, V, 'o')
+    plt.grid()
+    # plt.ylim(0.0, 0.8)
+    plt.savefig(os.path.join(solver.dirfigs, "V.png"))
+    plt.close()
+
+    plt.plot(r, Z, 'o')
+    plt.grid()
+    # plt.ylim(0., 2.)
+    plt.savefig(os.path.join(solver.dirfigs, "Z.png"))
+    plt.close()
+
+    plt.plot(Z, V, 'o')
+    plt.grid()
+    # plt.ylim(0., 2.)
+    plt.savefig(os.path.join(solver.dirfigs, "ZV.png"))
+    plt.close()
+
+
+
+
+    u, v = solver.solve(r, t)
+
+    
+    # for (ri,ui) in zip(r,u):
+    #     print(f"r={ri:.4f}, u={ui:.4f}")
+
+    plt.plot(r, u, 'o')
+    plt.grid()
+    plt.savefig(os.path.join(solver.dirfigs, "u.png"))
+    plt.close()
+
+    plt.plot(r, np.abs(v), 'o')
+    plt.grid()
+    plt.savefig(os.path.join(solver.dirfigs, "v.png"))
+    plt.close()
+
+    
