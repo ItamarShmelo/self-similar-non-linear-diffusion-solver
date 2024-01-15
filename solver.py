@@ -137,6 +137,7 @@ class Solver:
             return (r**2/np.abs(t)*np.abs(Z))**(1./self.m), r/np.abs(t)*V
     
 def zero_slope_event(Z, V_arr, m):
+    return (2.*Z + m*V_arr[0])
     
 if __name__ == "__main__":
     Z0=-1e-5
