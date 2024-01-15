@@ -96,5 +96,26 @@ class Solver:
         dV_dln_eta -= 0. if np.abs(Z) < np.finfo(float).eps*1024. else self.m*(self.delta-V)*V/Z 
         dV_dln_eta /= self.m
         return [dZ_dln_eta, dV_dln_eta]
+    
+    def solve(self, r:np.ndarray, t:float, solve_for_Z_V=False):
+        assert self.delta is not None
+
+        if t < 0.0:
+            eta = r / np.abs(t)**self.delta
+            Z = np.zeros_like(eta)
+            V = np.zeros_like(eta)
+
+            eta_after_front = eta[eta >=1.]
+            eta_before_front = eta[eta < 1.]
+
+            ln_eta = np.log(eta_after_front)
+
+            solution = solve_ivp(self.ode, t_span=(ln_eta[0], ln_eta[-1]), y0=(0.0, self.delta), t_eval=ln_eta, method='LSODA', rtol=1e-12, atol=1e-8)
+
+            Z[len(eta_before_front):], V[len(eta_before_front):] = solution.y[0], solution.y[1]
+            if solve_for_Z_V:
+                return Z, V
+            
+            return (r**2/np.abs(t)*np.abs(Z))**(1./self.m), r/np.abs(t)*V
 def zero_slope_event(Z, V_arr, m):
     return (2.*Z + m*V_arr[0])
