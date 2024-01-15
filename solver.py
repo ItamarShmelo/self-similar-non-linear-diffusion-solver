@@ -28,6 +28,25 @@ class Solver:
 
         self.counter = 0
         self.dirfigs = f"n_{self.n:.2f}_m_{self.m:.2f}"
+    def f(self, delta_arr, Z0):
+        delta = delta_arr[0]
+        if delta >= 1. or delta <= 0.5: return 1.
+
+        sol_A = self.integrate_from_A(delta, Z0)
+        sol_O = self.integrate_from_O(delta, Z0)
+
+        plt.plot(sol_A.t, sol_A.y[0])
+        plt.plot(sol_O.t, sol_O.y[0])
+
+        plt.xlabel("Z")
+        plt.ylabel("V")
+        plt.grid()
+        plt.savefig(os.path.join(self.dirfigs, f"fig_{self.counter}.png"))
+        self.counter += 1
+        plt.close()
+        
+        return [sol_A.y[0][-1] - sol_O.y[0][-1]]
+    
     def integrate_from_A(self, delta, Z0, dense_output=False):
         V0 = delta 
         V0 += (self.beta*delta-1.) * Z0 / (self.m*(self.m+1.))
