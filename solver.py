@@ -8,6 +8,8 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SOLVER")
 
+EVENT_OCCURED = 1
+
 class Solver:
     def __init__(self, *, n:float, m:float):
         self.n = n
@@ -53,13 +55,17 @@ class Solver:
         self.counter += 1
         plt.close()
         
-        return [sol_A.y[0][-1] - sol_O.y[0][-1]]
+        if sol_A.status == EVENT_OCCURED and sol_O.status == EVENT_OCCURED:
+            return [sol_A.y_events[0][0][0] - sol_O.y_events[0][0][0]]
+        
+        logger.error("Zero slope Event did not occur in integration problem with Z0")
+        raise Exception("Zero slope Event did not occur in integration problem with Z0")
     
     def integrate_from_A(self, delta, Z0, dense_output=False):
         V0 = delta 
         V0 += (self.beta*delta-1.) * Z0 / (self.m*(self.m+1.))
 
-        Zmax = -self.m*delta/2.
+        Zmax = -self.m*delta
 
         solution = solve_ivp(self.dVdZ, t_span=(Z0, Zmax), y0=[V0], args=[delta], events=self.event_lambda, rtol=1e-8, method='LSODA', dense_output=dense_output)
         
@@ -69,8 +75,8 @@ class Solver:
         V0 = 1. - ((2.*delta - 1.)*(3. + 2.*self.m)/(self.m*delta) - 3. + self.n)*Z0
         V0 = 1.- V0*(self.beta*delta-1.)*(self.m+1)/(self.m*delta**2.)*Z0
         V0 = - (2.*delta - 1.) * Z0 / self.m*V0
-        Zmax = -self.m*delta/2.
-
+        
+        Zmax = -self.m*delta
 
         solution = solve_ivp(self.dVdZ, t_span=(Z0, Zmax), y0=[V0], args=[delta], events=self.event_lambda, rtol=1e-8, method='LSODA', dense_output=dense_output)
         
