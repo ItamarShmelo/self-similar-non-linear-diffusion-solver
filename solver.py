@@ -47,7 +47,6 @@ class Solver:
         sol_A = self.integrate_from_A(delta, Z0)
         sol_O = self.integrate_from_O(delta, Z0)
 
-        
         if sol_A.status == EVENT_OCCURED and sol_O.status == EVENT_OCCURED:
             return [sol_A.y_events[0][0][0] - sol_O.y_events[0][0][0]]
         
