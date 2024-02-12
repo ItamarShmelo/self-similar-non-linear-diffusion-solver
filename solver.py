@@ -103,45 +103,90 @@ class Solver:
         dV_dln_eta /= self.m
         return [dZ_dln_eta, dV_dln_eta]
     
-    def solve(self, r:np.ndarray, t:float, solve_for_Z_V=False):
+    def dln_eta_dZ(self, Z, ln_eta_arr, V_Z):
+        return [-1.0/(2.*Z + self.m*V_Z(Z))]
+
+    def create_interpolation_functions(self, Z0:float):
         assert self.delta is not None
+        assert Z0 < 0.0
+    
+        sol_V_Z_A = self.integrate_from_A(self.delta, Z0, dense_output=True)
+        sol_V_Z_O = self.integrate_from_O(self.delta, Z0, dense_output=True)
+
+        assert sol_V_Z_A.status == EVENT_OCCURED and sol_V_Z_O.status == EVENT_OCCURED
+
+        V_Z_from_A = interp1d([0.0, *sol_V_Z_A.t], [self.delta, *sol_V_Z_A.y[0]], kind='linear', bounds_error=False, fill_value=self.delta)
+        
+        V_Z_from_O = interp1d(sol_V_Z_O.t, sol_V_Z_O.y[0], kind='linear', bounds_error=True)
+
+        Zend_A = sol_V_Z_A.t_events[0][0]
+
+        sol_ln_eta_Z_A = solve_ivp(self.dln_eta_dZ, t_span=(0., Zend_A), y0=[0.0], args=[V_Z_from_A],method='LSODA', rtol=1e-12, atol=1e-8)
+
+        
+        Zstart_O = sol_V_Z_O.t_events[0][0]*(1.- 1e3*EPSILON)
+        ln_eta_end_A_start_O = sol_ln_eta_Z_A.y[0][-1]
+        
+        sol_ln_eta_Z_O = solve_ivp(self.dln_eta_dZ, t_span=(Zstart_O, Z0), y0=[ln_eta_end_A_start_O], args=[V_Z_from_O], method='LSODA', rtol=1e-12, atol=1e-8)
+
+        # sol_ln_eta_Z_A end at the same ln_eta that sol_ln_eta_Z_O starts 
+        Z_ln_eta = interp1d(np.append(sol_ln_eta_Z_A.y[0][:-1], sol_ln_eta_Z_O.y[0]), np.append(sol_ln_eta_Z_A.t[:-1], sol_ln_eta_Z_O.t), kind='linear', bounds_error=True)
+
+        ln_eta_end = sol_ln_eta_Z_O.y[0][-1]
+
+        ln_eta_from_A_grid = np.linspace(0.0, ln_eta_end_A_start_O, int(1e4), endpoint=False)
+        ln_eta_from_O_grid = np.linspace(ln_eta_end_A_start_O, ln_eta_end, int(1e4))
+
+        V_on_grid = np.append(V_Z_from_A(Z_ln_eta(ln_eta_from_A_grid)), V_Z_from_O(Z_ln_eta(ln_eta_from_O_grid)))
+
+        V_ln_eta = interp1d(np.append(ln_eta_from_A_grid, ln_eta_from_O_grid), V_on_grid, kind='linear', bounds_error=True)
+
+        self.V_negative_time = V_ln_eta
+        self.Z_negative_time = Z_ln_eta
+        self.max_eta_negative_time = np.exp(ln_eta_end)
+    
+    def solve(self, r:np.ndarray, t:float):
+        assert self.delta is not None
+        assert (self.V_negative_time is not None) and (self.Z_negative_time is not None) and self.max_eta_negative_time is not None
 
         if t < 0.0:
             eta = r / np.abs(t)**self.delta
+            
             Z = np.zeros_like(eta)
             V = np.zeros_like(eta)
 
-            eta_after_front = eta[eta >=1.]
             eta_before_front = eta[eta < 1.]
 
-            ln_eta = np.log(eta_after_front)
+            if any(eta > self.max_eta_negative_time):
+                max_r = self.max_eta_negative_time * np.abs(t)**self.delta
+                logger.warning(f"Some points are outside the limits, solving from r=0.0 up to r={max_r:g}")
+                logger.warning(f"RETURNING NaN FOR THE UNSOLVED r's")
 
-            solution = solve_ivp(self.ode, t_span=(ln_eta[0], ln_eta[-1]), y0=(0.0, self.delta), t_eval=ln_eta, method='LSODA', rtol=1e-12, atol=1e-8)
+            eta_after_front = eta[np.logical_and(eta >= 1., eta <= self.max_eta_negative_time)]
 
-            Z[len(eta_before_front):], V[len(eta_before_front):] = solution.y[0], solution.y[1]
-            if solve_for_Z_V:
-                return Z, V
-            
-            return (r**2/np.abs(t)*np.abs(Z))**(1./self.m), r/np.abs(t)*V
-        else:
-            eta = r / np.abs(t)**self.delta
-            Z = np.zeros_like(eta)
-            V = np.zeros_like(eta)
-            eta_initial = min(eta[0], 1e-8)
-            ln_eta = np.log(eta)
-            
-            Z0 = 1.0/eta_initial**2.0
-            V0 = -(2.*self.delta-1.)/(self.m*(self.n+1.))*(1. - (self.beta*self.delta-1.)/(self.m*(self.n+1.)*(self.n+3.)*Z0))
+            ln_eta_after_front = np.log(eta_after_front)
 
-            solution = solve_ivp(self.ode, t_span=(np.log(eta_initial), ln_eta[-1]), y0=(Z0, V0), t_eval=ln_eta, method='LSODA', rtol=1e-12, atol=1e-8)
+            start_index = len(eta_before_front)
+            end_index = start_index+len(eta_after_front)
             
-            Z[:], V[:] = solution.y[0], solution.y[1]
-            
-            if solve_for_Z_V:
-                return Z, V
+            Z[start_index:end_index] = self.Z_negative_time(ln_eta_after_front)
+            V[start_index:end_index] = self.V_negative_time(ln_eta_after_front)
 
-            return (r**2/np.abs(t)*np.abs(Z))**(1./self.m), r/np.abs(t)*V
-    
+            Z[end_index:] = np.nan
+            V[end_index:] = np.nan
+
+            u = (r**2/np.abs(t)*np.abs(Z))**(1./self.m)
+            v = r/np.abs(t)*V
+            
+            return {
+                'u' : u,
+                'v' : v,
+                'Z' : Z,
+                'V' : V,
+                'i' : end_index
+                }
+
+
 def zero_slope_event(Z, V_arr, m):
     return (2.*Z + m*V_arr[0])
     
