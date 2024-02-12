@@ -32,9 +32,7 @@ class Solver:
         self.event_lambda = lambda Z, V_arr, delta: zero_slope_event(Z, V_arr, m=self.m)
         self.event_lambda.terminal = True
 
-        self.counter = 0
         self.dirfigs = f"n_{self.n:.2f}_m_{self.m:.2f}"
-        os.makedirs(self.dirfigs, exist_ok=True)
         
 
     def calc_delta(self, Z0, delta_initial_guess=3./4.):
@@ -49,15 +47,6 @@ class Solver:
         sol_A = self.integrate_from_A(delta, Z0)
         sol_O = self.integrate_from_O(delta, Z0)
 
-        plt.plot(sol_A.t, sol_A.y[0])
-        plt.plot(sol_O.t, sol_O.y[0])
-
-        plt.xlabel("Z")
-        plt.ylabel("V")
-        plt.grid()
-        plt.savefig(os.path.join(self.dirfigs, f"fig_{self.counter}.png"))
-        self.counter += 1
-        plt.close()
         
         if sol_A.status == EVENT_OCCURED and sol_O.status == EVENT_OCCURED:
             return [sol_A.y_events[0][0][0] - sol_O.y_events[0][0][0]]
