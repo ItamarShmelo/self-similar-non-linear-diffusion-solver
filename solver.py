@@ -36,11 +36,17 @@ class Solver:
         
 
     def calc_delta(self, Z0, delta_initial_guess=3./4.):
+        """
+        Calculate the delta as the root of f
+        """
         self.delta = root(self.f, x0=[delta_initial_guess], args=Z0, tol=1e-8).x[0]
         return self
 
 
     def f(self, delta_arr, Z0):
+        """
+        Calculates the difference between the end points of the integration from A and O
+        """
         delta = delta_arr[0]
         if delta >= 1. or delta <= 0.5: return 1.
 
@@ -54,6 +60,9 @@ class Solver:
         raise Exception("Zero slope Event did not occur in integration problem with Z0")
     
     def integrate_from_A(self, delta, Z0, dense_output=False):
+        """
+        Integration from A=(0, delta) until point with infinite slope
+        """
         V0 = delta 
         V0 += (self.beta*delta-1.) * Z0 / (self.m*(self.m+1.))
 
@@ -64,6 +73,9 @@ class Solver:
         return solution
 
     def integrate_from_O(self, delta:float, Z0:float, dense_output:bool=False):
+        """
+        Integration from O=(0, 0) until point with infinite slope
+        """
         V0 = 1. - ((2.*delta - 1.)*(3. + 2.*self.m)/(self.m*delta) - 3. + self.n)*Z0
         V0 = 1.- V0*(self.beta*delta-1.)*(self.m+1)/(self.m*delta**2.)*Z0
         V0 = - (2.*delta - 1.) * Z0 / self.m*V0
@@ -86,6 +98,10 @@ class Solver:
         return [numer / denom]
     
     def ode(self, ln_eta, y):
+        """
+        dZ/dln_eta
+        dV/dln_eta
+        """
         Z, V = y
         dZ_dln_eta = -(2.*Z+self.m*V)
 
@@ -96,32 +112,44 @@ class Solver:
         return [dZ_dln_eta, dV_dln_eta]
     
     def dln_eta_dZ(self, Z, ln_eta_arr, V_Z):
+        """
+        dln_eta/dZ
+        V_Z is a function V(Z)
+        """
         return [-1.0/(2.*Z + self.m*V_Z(Z))]
 
     def create_interpolation_functions(self, Z0:float):
+        """
+        Creates the functions V(ln_eta), Z(ln_eta)
+        """
         assert self.delta is not None
         assert Z0 < 0.0
-    
+        
+        # integrate from A and O
         sol_V_Z_A = self.integrate_from_A(self.delta, Z0, dense_output=True)
         sol_V_Z_O = self.integrate_from_O(self.delta, Z0, dense_output=True)
 
         assert sol_V_Z_A.status == EVENT_OCCURED and sol_V_Z_O.status == EVENT_OCCURED
 
+        # create V(Z) from A and from O, since V(Z) is not a function
+        # notice integration is from 0.0 since the integration sol_V_Z_A is from Z0
         V_Z_from_A = interp1d([0.0, *sol_V_Z_A.t], [self.delta, *sol_V_Z_A.y[0]], kind='linear', bounds_error=False, fill_value=self.delta)
-        
         V_Z_from_O = interp1d(sol_V_Z_O.t, sol_V_Z_O.y[0], kind='linear', bounds_error=True)
-
-        Zend_A = sol_V_Z_A.t_events[0][0]
-
-        sol_ln_eta_Z_A = solve_ivp(self.dln_eta_dZ, t_span=(0., Zend_A), y0=[0.0], args=[V_Z_from_A],method='LSODA', rtol=1e-12, atol=1e-8)
-
         
+        # end Z of integration from A
+        Zend_A = sol_V_Z_A.t_events[0][0]
+        
+        # we split the ln_eta(Z) integration too because we give the functions V_Z_from_A, V_Z_from_O as args
+        sol_ln_eta_Z_A = solve_ivp(self.dln_eta_dZ, t_span=(0., Zend_A), y0=[0.0], args=[V_Z_from_A], method='LSODA', rtol=1e-12, atol=1e-8)
+
+        # starting from close to the point of infinte slope (else we have infinite slope and an error)
         Zstart_O = sol_V_Z_O.t_events[0][0]*(1.- 1e3*EPSILON)
         ln_eta_end_A_start_O = sol_ln_eta_Z_A.y[0][-1]
         
         sol_ln_eta_Z_O = solve_ivp(self.dln_eta_dZ, t_span=(Zstart_O, Z0), y0=[ln_eta_end_A_start_O], args=[V_Z_from_O], method='LSODA', rtol=1e-12, atol=1e-8)
 
         # sol_ln_eta_Z_A end at the same ln_eta that sol_ln_eta_Z_O starts 
+        # Z(ln_eta)
         Z_ln_eta = interp1d(np.append(sol_ln_eta_Z_A.y[0][:-1], sol_ln_eta_Z_O.y[0]), np.append(sol_ln_eta_Z_A.t[:-1], sol_ln_eta_Z_O.t), kind='linear', bounds_error=True)
 
         ln_eta_end = sol_ln_eta_Z_O.y[0][-1]
@@ -131,10 +159,13 @@ class Solver:
 
         V_on_grid = np.append(V_Z_from_A(Z_ln_eta(ln_eta_from_A_grid)), V_Z_from_O(Z_ln_eta(ln_eta_from_O_grid)))
 
+        # V(ln_eta) = V(Z(ln_eta))
         V_ln_eta = interp1d(np.append(ln_eta_from_A_grid, ln_eta_from_O_grid), V_on_grid, kind='linear', bounds_error=True)
 
         self.V_negative_time = V_ln_eta
         self.Z_negative_time = Z_ln_eta
+
+        # maximal eta we can solve
         self.max_eta_negative_time = np.exp(ln_eta_end)
     
     def solve(self, r:np.ndarray, t:float):
