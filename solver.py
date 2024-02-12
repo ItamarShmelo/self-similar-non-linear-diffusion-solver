@@ -1,14 +1,17 @@
+import sys
+import os
 import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.optimize import root
+from scipy.interpolate import interp1d
 from matplotlib import pyplot as plt
-import os
 
 import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SOLVER")
 
 EVENT_OCCURED = 1
+EPSILON = sys.float_info.epsilon
 
 class Solver:
     def __init__(self, *, n:float, m:float):
@@ -22,9 +25,10 @@ class Solver:
         logger.info(f"m={self.m}")
 
         self.delta = None
-        
-        self.delta_temp = None
-        
+        self.Z_negative_time = None
+        self.V_negative_time = None
+        self.max_eta_negative_time = None
+
         self.event_lambda = lambda Z, V_arr, delta: zero_slope_event(Z, V_arr, m=self.m)
         self.event_lambda.terminal = True
 
