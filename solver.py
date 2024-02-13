@@ -26,6 +26,9 @@ class Solver:
         logger.info(f"m={self.m}")
         logger.info(f"omega={self.omega}")
 
+        self.max_delta = 1.
+        self.min_delta = 1. / (2. + self.omega)
+
         self.delta = None
         self.Z_negative_time = None
         self.V_negative_time = None
@@ -37,10 +40,16 @@ class Solver:
         self.dirfigs = f"n_{self.n:.2f}_m_{self.m:.2f}"
         
 
-    def calc_delta(self, Z0, delta_initial_guess=3./4.):
+    def calc_delta(self, Z0, delta_initial_guess=None):
         """
         Calculate the delta as the root of f
         """
+        assert Z0 < 0.
+
+        if delta_initial_guess is None:
+            delta_initial_guess = 0.5*(self.max_delta + self.min_delta)
+
+        assert delta_initial_guess < self.max_delta and delta_initial_guess > self.min_delta, f"delta initial guess = {delta_initial_guess:g}"
         self.delta = root(self.f, x0=[delta_initial_guess], args=Z0, tol=1e-8).x[0]
         return self
 
