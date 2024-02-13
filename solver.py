@@ -59,7 +59,7 @@ class Solver:
         Calculates the difference between the end points of the integration from A and O
         """
         delta = delta_arr[0]
-        if delta >= 1. or delta <= 0.5: return 1.
+        if delta >= self.max_delta or delta <= self.min_delta: return [1.]
 
         sol_A = self.integrate_from_A(delta, Z0)
         sol_O = self.integrate_from_O(delta, Z0)
