@@ -44,7 +44,7 @@ class Solver:
         self.event_lambda = lambda Z, V_arr, delta: zero_slope_event(Z, V_arr, m=self.m, omega=self.omega)
         self.event_lambda.terminal = True
 
-        self.dirfigs = f"n_{self.n:.2f}_m_{self.m:.2f}"
+        self.dirfigs = f"n_{self.n:g}_m_{self.m:g}_omega={self.omega:g}"
         
 
     def calc_delta(self, Z0, delta_initial_guess=None):
