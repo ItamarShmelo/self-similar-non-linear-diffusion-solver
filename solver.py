@@ -46,6 +46,8 @@ class Solver:
 
         self.dirfigs = f"n_{self.n:g}_m_{self.m:g}_omega={self.omega:g}"
         
+        self.calc_delta(self.Z0)
+        self.create_interpolation_functions(self.Z0)
 
     def calc_delta(self, Z0, delta_initial_guess=None):
         """
