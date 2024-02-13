@@ -78,9 +78,12 @@ class Solver:
         """
         Integration from O=(0, 0) until point with infinite slope
         """
-        V0 = 1. - ((2.*delta - 1.)*(3. + 2.*self.m)/(self.m*delta) - 3. + self.n)*Z0
-        V0 = 1.- V0*(self.beta*delta-1.)*(self.m+1)/(self.m*delta**2.)*Z0
-        V0 = - (2.*delta - 1.) * Z0 / self.m*V0
+        V0 = - (2.*delta - 1.) / (self.m*delta) * Z0
+        
+        alpha = -((2.+self.omega)*delta - 1.) / (self.m*delta)
+        gamma = -alpha*(self.beta-1.-self.m)/(self.m*delta**2.)
+        
+        V0 = alpha*Z0 + gamma*Z0**2
         
         Zmax = -self.m*delta
 
@@ -91,11 +94,11 @@ class Solver:
     def dVdZ(self, Z, V_arr, delta:float):
         V = V_arr[0]
 
-        numer = Z*(2.*delta-1.)
+        numer = Z*((2.+self.omega)*delta-1.)
         numer += self.m*(self.n+1.)*V*Z 
         numer += self.m*(delta-V)*V
 
-        denom = self.m*Z*(2.*Z + self.m*V)
+        denom = self.m*Z*((2.+self.omega)*Z + self.m*V)
 
         return [numer / denom]
     
@@ -105,12 +108,14 @@ class Solver:
         dV/dln_eta
         """
         Z, V = y
-        dZ_dln_eta = -(2.*Z+self.m*V)
+        dZ_dln_eta = -((2.+self.omega)*Z+self.m*V)
 
-        dV_dln_eta = -(2.*self.delta-1.)
+        dV_dln_eta = -((2.+self.omega)*self.delta-1.)
         dV_dln_eta -= self.m*(self.n+1.)*V
+        
         dV_dln_eta -= 0. if np.abs(Z) < np.finfo(float).eps*1024. else self.m*(self.delta-V)*V/Z 
         dV_dln_eta /= self.m
+        
         return [dZ_dln_eta, dV_dln_eta]
     
     def dln_eta_dZ(self, Z, ln_eta_arr, V_Z):
@@ -118,7 +123,7 @@ class Solver:
         dln_eta/dZ
         V_Z is a function V(Z)
         """
-        return [-1.0/(2.*Z + self.m*V_Z(Z))]
+        return [-1.0/((2.+self.omega)*Z + self.m*V_Z(Z))]
 
     def create_interpolation_functions(self, Z0:float):
         """
@@ -200,7 +205,7 @@ class Solver:
             Z[end_index:] = np.nan
             V[end_index:] = np.nan
 
-            u = (r**2/np.abs(t)*np.abs(Z))**(1./self.m)
+            u = (r**(2+self.omega)/np.abs(t)*np.abs(Z))**(1./self.m)
             v = r/np.abs(t)*V
             
             return {
