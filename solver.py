@@ -14,15 +14,17 @@ EVENT_OCCURED = 1
 EPSILON = sys.float_info.epsilon
 
 class Solver:
-    def __init__(self, *, n:float, m:float):
+    def __init__(self, *, n:float, m:float, omega:float):
         self.n = n
         self.m = m
+        self.omega = omega
 
-        self.beta = 2.0 + self.m * (self.n + 1.0)
+        self.beta = (2.0 + self.omega) + self.m * (self.n + 1.0)
         self.b = 1.0 # sets the front at x=1 for t=-1
 
         logger.info(f"n={self.n}")
         logger.info(f"m={self.m}")
+        logger.info(f"omega={self.omega}")
 
         self.delta = None
         self.Z_negative_time = None
