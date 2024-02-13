@@ -34,7 +34,7 @@ class Solver:
         self.V_negative_time = None
         self.max_eta_negative_time = None
 
-        self.event_lambda = lambda Z, V_arr, delta: zero_slope_event(Z, V_arr, m=self.m)
+        self.event_lambda = lambda Z, V_arr, delta: zero_slope_event(Z, V_arr, m=self.m, omega=self.omega)
         self.event_lambda.terminal = True
 
         self.dirfigs = f"n_{self.n:.2f}_m_{self.m:.2f}"
