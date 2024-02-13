@@ -56,10 +56,9 @@ class Solver:
         sol_O = self.integrate_from_O(delta, Z0)
 
         if sol_A.status == EVENT_OCCURED and sol_O.status == EVENT_OCCURED:
-            return [sol_A.y_events[0][0][0] - sol_O.y_events[0][0][0]]
+            return [sol_A.t_events[0][0] - sol_O.t_events[0][0]]
         
-        logger.error("Zero slope Event did not occur in integration problem with Z0")
-        raise Exception("Zero slope Event did not occur in integration problem with Z0")
+        return [sol_A.t[-1] - sol_O.t[-1]]
     
     def integrate_from_A(self, delta, Z0, dense_output=False):
         """
