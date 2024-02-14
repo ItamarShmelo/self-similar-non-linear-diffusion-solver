@@ -302,6 +302,10 @@ class Solver:
             return -(x/(self.b*self.fac))**(1./self.delta)
 
 
+def zero_slope_event(Z, V_arr, m, omega):
+    return ((2.+omega)*Z + m*V_arr[0])
+
+
 if __name__ == "__main__":
     Z0=-1e-5
 
