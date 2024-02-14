@@ -13,17 +13,70 @@ logger = logging.getLogger("SOLVER")
 EVENT_OCCURED = 1
 EPSILON = sys.float_info.epsilon
 
-class Solver:
-    def __init__(self, *, n:float, m:float, omega:float, Z0:float):
-        assert n >= 0
-        assert m >= 1
-        assert omega > -0.7 and omega <= 29.
-        assert Z0 < 0.
+class Units:
+    sigma = 5.670374419e-5
 
-        self.n = n
-        self.m = m
-        self.omega = omega
+class Solver:
+    def __init__(self, *, 
+                 geometry=None,  # 'spherical', 'cylindrical', 'planar'
+                 rho0=None,      # spatial density coeff
+                 omega=None,     # spatial density power
+                 g=None,         # opacity coeff
+                 alpha=None,     # opacity temmperature power
+                 lambdap=None,   # opacity density power
+                 f=None,         # energy coeff
+                 beta=None,      # energy temmperature power
+                 mu=None,        # energy density power
+                 r_front=1.,
+                 t_front=-1.,
+                 A=1.,
+                 n=None,
+                 m=None,
+                 Z0
+                 ):
+        
+        self.init_input = None
+        if {geometry, rho0, g, alpha, lambdap, f, beta, mu} != {None}:
+            assert None not in {geometry, rho0, omega, g, alpha, lambdap, f, beta, mu}
+            self.init_input = {
+                'geometry' : geometry, 
+                'rho0' : rho0,
+                'omega' : omega,
+                'g' : g,
+                'alpha' : alpha,
+                'lambdap' : lambdap,
+                'f' : f,
+                'beta' : beta,
+                'mu' : mu
+            }
+
+            m = omega*(1.-mu)
+            k = omega*(1+lambdap)
+            
+            self.A = 16.*Units.sigma*g/(3.*beta*f**((4.+alpha)/beta)*rho0**(lambdap+1.+(1.-mu)*(alpha+4.)/beta))
+
+            if geometry == "spherical":     d=3
+            elif geometry == "cylindrical": d=2
+            elif geometry == "planar":      d=1
+            self.dim = d
+            self.n = -(m-d+1.)
+            self.m = (4. + alpha - beta)/beta
+            self.omega = -(k+m)
+        else:
+            assert None not in {n, m, omega, A}
+            self.n = n
+            self.m = m
+            self.omega=omega
+            self.A = A
+
         self.Z0 = Z0
+        self.ell = -1./(2.+self.omega)
+        self.fac = self.A**self.ell
+
+        assert self.n >= 0
+        assert self.m >= 1
+        assert self.omega > -0.7 and self.omega <= 29.
+        assert Z0 < 0.
 
         self.beta = (2.0 + self.omega) + self.m * (self.n + 1.0)
         self.b = 1.0 # sets the front at x=1 for t=-1
