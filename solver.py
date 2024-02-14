@@ -77,6 +77,7 @@ class Solver:
         assert self.m >= 1
         assert self.omega > -0.7 and self.omega <= 29.
         assert Z0 < 0.
+        assert t_front < 0.
 
         self.beta = (2.0 + self.omega) + self.m * (self.n + 1.0)
         self.b = 1.0 # sets the front at x=1 for t=-1
