@@ -313,7 +313,12 @@ if __name__ == "__main__":
     r_before=np.linspace(0., 2.0, 10000)
     t_before=-1.
     
-    # sol = solver.solve(r_before, t_before)
-
     for key, val in vars(solver).items():
         print(key, val)
+    
+    sol = solver.solve(r_before, t_before)
+
+    plt.plot(r_before, sol['u'])
+    plt.grid()
+    plt.show()
+    plt.close()
