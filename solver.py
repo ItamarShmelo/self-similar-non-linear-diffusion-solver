@@ -102,6 +102,17 @@ class Solver:
         self.calc_delta(self.Z0)
         self.create_interpolation_functions(self.Z0)
 
+    def energy_volume_to_temperature(self, energy_volume, r):
+        assert self.init_input != None
+        f = self.init_input['f']
+        beta = self.init_input['beta']
+        rho0 = self.init_input['rho0']
+        omega = self.init_input['omega']
+        mu = self.init_input['mu']
+
+        density = rho0*r**(-omega)
+        return (energy_volume/(f*density**(1.-mu)))**(1./beta)
+
     def calc_delta(self, Z0, delta_initial_guess=None):
         """
         Calculate the delta as the root of f
