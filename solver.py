@@ -288,11 +288,20 @@ class Solver:
                 'V' : V,
                 'i' : end_index
                 }
+        
+        def heat_wave_position(self, *, t:float):
+            assert self.delta is not None
+            assert t <= 0.
+
+            return self.b*self.fac*np.abs(t)**self.delta
+        
+        def heat_wave_time(self, *, r:float):
+            assert self.delta is not None
+            assert r >= 0.
+
+            return -(x/(self.b*self.fac))**(1./self.delta)
 
 
-def zero_slope_event(Z, V_arr, m):
-    return (2.*Z + m*V_arr[0])
-    
 if __name__ == "__main__":
     Z0=-1e-5
 
