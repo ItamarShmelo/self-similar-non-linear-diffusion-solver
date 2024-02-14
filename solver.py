@@ -172,22 +172,6 @@ class Solver:
 
         return [numer / denom]
     
-    def ode(self, ln_eta, y):
-        """
-        dZ/dln_eta
-        dV/dln_eta
-        """
-        Z, V = y
-        dZ_dln_eta = -((2.+self.omega)*Z+self.m*V)
-
-        dV_dln_eta = -((2.+self.omega)*self.delta-1.)
-        dV_dln_eta -= self.m*(self.n+1.)*V
-        
-        dV_dln_eta -= 0. if np.abs(Z) < np.finfo(float).eps*1024. else self.m*(self.delta-V)*V/Z 
-        dV_dln_eta /= self.m
-        
-        return [dZ_dln_eta, dV_dln_eta]
-    
     def dln_eta_dZ(self, Z, ln_eta_arr, V_Z):
         """
         dln_eta/dZ
