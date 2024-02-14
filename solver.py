@@ -100,6 +100,8 @@ class Solver:
         self.dirfigs = f"n_{self.n:g}_m_{self.m:g}_omega={self.omega:g}"
         
         self.calc_delta(self.Z0)
+        self.b = r_front / (self.fac*t_front**self.delta)
+
         self.create_interpolation_functions(self.Z0)
 
     def energy_volume_to_temperature(self, energy_volume, r):
@@ -244,8 +246,9 @@ class Solver:
         assert self.delta is not None
         assert (self.V_negative_time is not None) and (self.Z_negative_time is not None) and self.max_eta_negative_time is not None
 
+        x = self.fac*r
         if t < 0.0:
-            eta = r / np.abs(t)**self.delta
+            eta = x / (self.b*np.abs(t)**self.delta)
             
             Z = np.zeros_like(eta)
             V = np.zeros_like(eta)
@@ -253,7 +256,7 @@ class Solver:
             eta_before_front = eta[eta < 1.]
 
             if any(eta > self.max_eta_negative_time):
-                max_r = self.max_eta_negative_time * np.abs(t)**self.delta
+                max_r = self.max_eta_negative_time * np.abs(t)**self.delta / self.fac
                 logger.warning(f"Some points are outside the limits, solving from r=0.0 up to r={max_r:g}")
                 logger.warning(f"RETURNING NaN FOR THE UNSOLVED r's")
 
