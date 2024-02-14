@@ -273,10 +273,15 @@ class Solver:
             Z[end_index:] = np.nan
             V[end_index:] = np.nan
 
-            u = (r**(2+self.omega)/np.abs(t)*np.abs(Z))**(1./self.m)
-            v = r/np.abs(t)*V
-            
+            u = (x**(2+self.omega)/np.abs(t)*np.abs(Z))**(1./self.m)
+            v = x/np.abs(t)*V
+
+            energy_volume = u / self.init_input['m'] if self.init_input is not None else None 
+            temperature = self.energy_volume_to_temperature(energy_volume) if energy_volume is not None else None
+
             return {
+                'energy_volume' : energy_volume,
+                'temperature' : temperature,
                 'u' : u,
                 'v' : v,
                 'Z' : Z,
