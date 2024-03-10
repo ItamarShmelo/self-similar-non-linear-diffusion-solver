@@ -101,7 +101,8 @@ class Solver:
         self.dirfigs = f"n_{self.n:g}_m_{self.m:g}_omega={self.omega:g}"
         
         self.calc_delta(self.Z0)
-        self.b = r_front / (self.fac*t_front**self.delta)
+        self.b = r_front*self.fac / (t_front**self.delta)
+        logger.info(f"b={self.b}")
 
         self.create_interpolation_functions(self.Z0)
 
@@ -275,7 +276,7 @@ class Solver:
             V[end_index:] = np.nan
 
             u = (x**(2+self.omega)/np.abs(t)*np.abs(Z))**(1./self.m)
-            v = x/np.abs(t)*V
+            v = x/t*V
 
             energy_volume = u / self.init_input['m'] if self.init_input is not None else None 
             temperature = self.energy_volume_to_temperature(energy_volume) if energy_volume is not None else None
@@ -290,17 +291,17 @@ class Solver:
                 'i' : end_index
                 }
         
-        def heat_wave_position(self, *, t:float):
-            assert self.delta is not None
-            assert t <= 0.
+    def heat_wave_position(self, *, t:float):
+        assert self.delta is not None
+        assert t <= 0.
 
-            return self.b*self.fac*np.abs(t)**self.delta
-        
-        def heat_wave_time(self, *, r:float):
-            assert self.delta is not None
-            assert r >= 0.
+        return self.b/self.fac*np.abs(t)**self.delta
+    
+    def heat_wave_time(self, *, r:float):
+        assert self.delta is not None
+        assert r >= 0.
 
-            return -(x/(self.b*self.fac))**(1./self.delta)
+        return -(r*self.fac/self.b)**(1./self.delta)
 
 
 def zero_slope_event(Z, V_arr, m, omega):
